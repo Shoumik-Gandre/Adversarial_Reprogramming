@@ -125,8 +125,9 @@ class Adversarial_Reprogramming(object):
             self.BCE = torch.nn.BCELoss()
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.Program.parameters()), lr=self.cfg.lr, betas=(0.5, 0.999))
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=self.cfg.decay)
-            for i in range(self.restore):
-                self.lr_scheduler.step()
+            if self.restore:
+                for i in range(self.restore):
+                    self.lr_scheduler.step()
             if self.gpu:
                 with torch.cuda.device(0):
                     self.BCE.cuda()
