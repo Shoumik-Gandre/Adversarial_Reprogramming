@@ -126,8 +126,7 @@ class Adversarial_Reprogramming(object):
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.Program.parameters()), lr=self.cfg.lr, betas=(0.5, 0.999))
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=self.cfg.decay)
             if self.restore:
-                for i in range(self.restore):
-                    self.lr_scheduler.step()
+                self.lr_scheduler.step()
             if self.gpu:
                 with torch.cuda.device(0):
                     self.BCE.cuda()
@@ -181,7 +180,6 @@ class Adversarial_Reprogramming(object):
 
     def train(self):
         for self.epoch in range(self.start_epoch, self.cfg.max_epoch + 1):
-            self.lr_scheduler.step()
             for j, (image, label) in tqdm(enumerate(self.train_loader)):
                 if j > 3: break;
                 image = self.tensor2var(image)
@@ -190,6 +188,7 @@ class Adversarial_Reprogramming(object):
                 self.optimizer.zero_grad()
                 self.loss.backward()
                 self.optimizer.step()
+            self.lr_scheduler.step()
             print('epoch: %03d/%03d, loss: %.6f' % (self.epoch, self.cfg.max_epoch, self.loss.data.cpu().numpy()))
             torch.save({'W': self.get_W}, os.path.join(self.cfg.train_dir, 'W_%03d.pt' % self.epoch))
             self.validate()
