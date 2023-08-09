@@ -203,6 +203,7 @@ def main():
     parser.add_argument('-r', '--restore', default=None, action='store', type=int, help='Specify checkpoint id to restore.')
     parser.add_argument('-g', '--gpu', default=[], nargs='+', type=str, help='Specify GPU ids.')
     # test params
+    print(cfg)
 
     args = parser.parse_args()
     # print(args)
