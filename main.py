@@ -63,7 +63,7 @@ class Program(nn.Module):
 
     def forward(self, image):
         image = image.repeat(1,3,1,1)
-        X = image.data.new(self.cfg.batch_size_per_gpu, 3, self.cfg.h1, self.cfg.w1)
+        X = image.data.new(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
         X[:] = 0
 
         X[:,:,int((self.cfg.h1-self.cfg.h2)//2):int((self.cfg.h1+self.cfg.h2)//2), int((self.cfg.w1-self.cfg.w2)//2):int((self.cfg.w1+self.cfg.w2)//2)] = image.detach().clone()
