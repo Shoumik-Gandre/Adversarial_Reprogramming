@@ -181,7 +181,6 @@ class Adversarial_Reprogramming(object):
     def train(self):
         for self.epoch in range(self.start_epoch, self.cfg.max_epoch + 1):
             for j, (image, label) in tqdm(enumerate(self.train_loader)):
-                if j > 3: break;
                 image = self.tensor2var(image)
                 self.out = self.Program(image)
                 self.loss = self.compute_loss(self.out, label)
