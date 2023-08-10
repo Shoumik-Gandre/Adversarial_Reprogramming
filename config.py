@@ -11,6 +11,7 @@ cfg.models_dir = 'models'
 cfg.data_dir = 'datasets'
 
 cfg.batch_size_per_gpu = 30
+cfg.batch_size = 60
 cfg.w1 = 224
 cfg.h1 = 224
 cfg.w2 = 28
