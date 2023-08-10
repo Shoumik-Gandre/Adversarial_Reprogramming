@@ -153,10 +153,7 @@ class Adversarial_Reprogramming(object):
         return Variable(tensor, requires_grad=requires_grad, volatile=volatile)
 
     def compute_loss(self, out, label):
-        if self.gpu:
-            label = torch.zeros(self.cfg.batch_size_per_gpu*len(self.gpu), 10).scatter_(1, label.view(-1,1), 1)
-        else:
-            label = torch.zeros(self.cfg.batch_size_per_gpu, 10).scatter_(1, label.view(-1,1), 1)
+        label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1)
         label = self.tensor2var(label)
         return self.BCE(out, label) + self.cfg.lmd * torch.norm(self.get_W) ** 2
 
