@@ -58,13 +58,14 @@ class Program(nn.Module):
         M[:,c_h-self.cfg.h2//2:c_h+self.cfg.h2//2, c_w-self.cfg.w2//2:c_w+self.cfg.w2//2] = 0
         self.M = Parameter(M, requires_grad=False)
 
-    def imagenet_label2_mnist_label(self, imagenet_label):
-        return imagenet_label[:,:10]
+    def output_mapper(self, output: torch.Tensor) -> torch.Tensor:
+        return output[:,:10]
 
     def forward(self, image):
         image = image.repeat(1,3,1,1)
-        X = image.data.new(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
-        X[:] = 0
+        # X = image.data.new(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
+        # X[:] = 0
+        X = torch.zeros(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
 
         X[:,:,int((self.cfg.h1-self.cfg.h2)//2):int((self.cfg.h1+self.cfg.h2)//2), int((self.cfg.w1-self.cfg.w2)//2):int((self.cfg.w1+self.cfg.w2)//2)] = image.detach().clone()
         X = Variable(X, requires_grad=True)
@@ -74,7 +75,7 @@ class Program(nn.Module):
         X_adv = (X_adv - self.mean) / self.std
         Y_adv = self.net(X_adv)
         Y_adv = F.softmax(Y_adv, 1)
-        return self.imagenet_label2_mnist_label(Y_adv)
+        return self.output_mapper(Y_adv)
 
 
 class Adversarial_Reprogramming(object):
