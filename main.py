@@ -24,6 +24,7 @@ class Program(nn.Module):
         self.gpu = gpu
         self.init_net()
         self.init_mask()
+        self.M: torch.Tensor
         self.W = Parameter(torch.randn(self.M.shape), requires_grad=True)
 
     def init_net(self):
@@ -56,7 +57,8 @@ class Program(nn.Module):
         M = torch.ones(3, self.cfg.h1, self.cfg.w1)
         c_w, c_h = int(np.ceil(self.cfg.w1/2.)), int(np.ceil(self.cfg.h1/2.))
         M[:,c_h-self.cfg.h2//2:c_h+self.cfg.h2//2, c_w-self.cfg.w2//2:c_w+self.cfg.w2//2] = 0
-        self.M = Parameter(M, requires_grad=False)
+        self.register_buffer('M', M)
+        # self.M = Parameter(M, requires_grad=False)
 
     def output_mapper(self, output: torch.Tensor) -> torch.Tensor:
         return output[:,:10]
