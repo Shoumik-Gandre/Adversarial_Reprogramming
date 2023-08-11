@@ -67,7 +67,7 @@ class Program(nn.Module):
         image = image.repeat(1,3,1,1)
         # X = image.data.new(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
         # X[:] = 0
-        X = torch.zeros(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
+        X = torch.zeros(image.shape[0], 3, self.cfg.h1, self.cfg.w1, device=image.device)
 
         X[:,:,int((self.cfg.h1-self.cfg.h2)//2):int((self.cfg.h1+self.cfg.h2)//2), int((self.cfg.w1-self.cfg.w2)//2):int((self.cfg.w1+self.cfg.w2)//2)] = image.detach().clone()
         X = Variable(X, requires_grad=True)
