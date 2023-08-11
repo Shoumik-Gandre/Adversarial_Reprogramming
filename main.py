@@ -124,8 +124,7 @@ class Adversarial_Reprogramming(object):
     def set_mode_and_gpu(self):
         if self.mode == 'train':
             # optimizer
-            # self.BCE = torch.nn.BCELoss()
-            self.BCE = torch.nn.CrossEntropyLoss()
+            self.BCE = torch.nn.BCELoss()
             self.optimizer = torch.optim.Adam((self.Program.get_parameter('W'),), lr=self.cfg.lr, betas=(0.5, 0.999))
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=self.cfg.decay)
             if self.restore:
@@ -162,8 +161,8 @@ class Adversarial_Reprogramming(object):
         return Variable(tensor, requires_grad=requires_grad, volatile=volatile)
 
     def compute_loss(self, out, label):
-        # label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1).to(device=label.device)
-        return self.BCE(out, label.to(out.device)) + self.cfg.lmd * torch.norm(self.Program.get_parameter('W')) ** 2
+        label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1).to(device=label.device)
+        return self.BCE(out, label) + self.cfg.lmd * torch.norm(self.Program.get_parameter('W')) ** 2
 
     def validate(self):
         acc = 0.0
