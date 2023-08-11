@@ -163,7 +163,7 @@ class Adversarial_Reprogramming(object):
 
     def compute_loss(self, out, label):
         # label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1).to(device=label.device)
-        return self.BCE(out, label) + self.cfg.lmd * torch.norm(self.Program.get_parameter('W')) ** 2
+        return self.BCE(out, label.to(out.device)) + self.cfg.lmd * torch.norm(self.Program.get_parameter('W')) ** 2
 
     def validate(self):
         acc = 0.0
