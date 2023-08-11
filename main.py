@@ -75,7 +75,7 @@ class Program(nn.Module):
         height_offset = round((victim_height - attack_height) / 2)
         width_offset = round((victim_width - attack_height) / 2)
         X[:, :, height_offset:height_offset+attack_height, width_offset:width_offset+attack_width] = image.detach().clone()
-        X = Variable(X, requires_grad=True)
+        X.requires_grad_()
 
         P = torch.sigmoid(self.W * self.M)
         X_adv = X + P
