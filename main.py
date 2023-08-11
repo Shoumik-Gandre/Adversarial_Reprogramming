@@ -54,22 +54,27 @@ class Program(nn.Module):
             param.requires_grad = False
 
     def init_mask(self):
-        M = torch.ones(3, self.cfg.h1, self.cfg.w1)
-        c_w, c_h = int(np.ceil(self.cfg.w1/2.)), int(np.ceil(self.cfg.h1/2.))
-        M[:,c_h-self.cfg.h2//2:c_h+self.cfg.h2//2, c_w-self.cfg.w2//2:c_w+self.cfg.w2//2] = 0
+        victim_channels, victim_height, victim_width = 3, self.cfg.h1, self.cfg.w1
+        attack_channels, attack_height, attack_width = 3, self.cfg.h2, self.cfg.w2
+        height_offset = round((victim_height - attack_height) / 2)
+        width_offset = round((victim_width - attack_height) / 2)
+
+        M = torch.ones(victim_channels, victim_height, victim_width)
+        M[:, height_offset:height_offset+attack_height, width_offset:width_offset+attack_width] = 0
         self.register_buffer('M', M)
-        # self.M = Parameter(M, requires_grad=False)
 
     def output_mapper(self, output: torch.Tensor) -> torch.Tensor:
         return output[:,:10]
 
     def forward(self, image):
         image = image.repeat(1,3,1,1)
-        # X = image.data.new(image.shape[0], 3, self.cfg.h1, self.cfg.w1)
-        # X[:] = 0
         X = torch.zeros(image.shape[0], 3, self.cfg.h1, self.cfg.w1, device=image.device)
 
-        X[:,:,int((self.cfg.h1-self.cfg.h2)//2):int((self.cfg.h1+self.cfg.h2)//2), int((self.cfg.w1-self.cfg.w2)//2):int((self.cfg.w1+self.cfg.w2)//2)] = image.detach().clone()
+        victim_channels, victim_height, victim_width = 3, self.cfg.h1, self.cfg.w1
+        attack_channels, attack_height, attack_width = 3, self.cfg.h2, self.cfg.w2
+        height_offset = round((victim_height - attack_height) / 2)
+        width_offset = round((victim_width - attack_height) / 2)
+        X[:, :, height_offset:height_offset+attack_height, width_offset:width_offset+attack_width] = image.detach().clone()
         X = Variable(X, requires_grad=True)
 
         P = torch.sigmoid(self.W * self.M)
