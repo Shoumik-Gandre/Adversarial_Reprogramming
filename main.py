@@ -21,6 +21,8 @@ class Program(nn.Module):
     def __init__(self, cfg, gpu):
         super(Program, self).__init__()
         self.cfg = cfg
+        self.attack_dims = (1, 28, 28)
+        self.victim_dims = (3, 224, 224)
         self.gpu = gpu
         self.init_net()
         self.init_mask()
@@ -54,8 +56,8 @@ class Program(nn.Module):
             param.requires_grad = False
 
     def init_mask(self):
-        victim_channels, victim_height, victim_width = 3, self.cfg.h1, self.cfg.w1
-        attack_channels, attack_height, attack_width = 3, self.cfg.h2, self.cfg.w2
+        victim_channels, victim_height, victim_width = self.victim_dims
+        attack_channels, attack_height, attack_width = self.attack_dims
         height_offset = round((victim_height - attack_height) / 2)
         width_offset = round((victim_width - attack_height) / 2)
 
@@ -67,17 +69,18 @@ class Program(nn.Module):
         return output[:,:10]
 
     def forward(self, image):
-        image = image.repeat(1,3,1,1)
-        X = torch.zeros(image.shape[0], 3, self.cfg.h1, self.cfg.w1, device=image.device)
-
-        victim_channels, victim_height, victim_width = 3, self.cfg.h1, self.cfg.w1
-        attack_channels, attack_height, attack_width = 3, self.cfg.h2, self.cfg.w2
+        victim_channels, victim_height, victim_width = self.victim_dims
+        attack_channels, attack_height, attack_width = self.attack_dims
         height_offset = round((victim_height - attack_height) / 2)
         width_offset = round((victim_width - attack_height) / 2)
+
+        image = image.repeat(1,3,1,1)
+        X = torch.zeros(image.shape[0], victim_channels, victim_height, victim_width, device=image.device)
         X[:, :, height_offset:height_offset+attack_height, width_offset:width_offset+attack_width] = image.detach().clone()
         X.requires_grad_()
 
         P = torch.tanh(self.W * self.M)
+        # P = torch.sigmoid(self.W * self.M)
         X_adv = X + P
         # X_adv = (X_adv - self.mean) / self.std
         Y_adv = self.net(X_adv)
@@ -121,7 +124,8 @@ class Adversarial_Reprogramming(object):
     def set_mode_and_gpu(self):
         if self.mode == 'train':
             # optimizer
-            self.BCE = torch.nn.BCELoss()
+            # self.BCE = torch.nn.BCELoss()
+            self.BCE = torch.nn.CrossEntropyLoss()
             self.optimizer = torch.optim.Adam((self.Program.get_parameter('W'),), lr=self.cfg.lr, betas=(0.5, 0.999))
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=self.cfg.decay)
             if self.restore:
@@ -151,7 +155,6 @@ class Adversarial_Reprogramming(object):
             if p.requires_grad:
                 return p
 
-
     def tensor2var(self, tensor, requires_grad=False, volatile=False):
         if self.gpu:
             with torch.cuda.device(0):
@@ -159,8 +162,7 @@ class Adversarial_Reprogramming(object):
         return Variable(tensor, requires_grad=requires_grad, volatile=volatile)
 
     def compute_loss(self, out, label):
-        label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1)
-        label = self.tensor2var(label)
+        # label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1).to(device=label.device)
         return self.BCE(out, label) + self.cfg.lmd * torch.norm(self.Program.get_parameter('W')) ** 2
 
     def validate(self):
@@ -174,7 +176,7 @@ class Adversarial_Reprogramming(object):
 
     def train(self):
         for self.epoch in range(self.start_epoch, self.cfg.max_epoch + 1):
-            for j, (image, label) in tqdm(enumerate(self.train_loader)):
+            for image, label in tqdm(self.train_loader):
                 image = self.tensor2var(image)
                 self.out = self.Program(image)
                 self.loss = self.compute_loss(self.out, label)
