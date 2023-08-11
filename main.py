@@ -77,9 +77,9 @@ class Program(nn.Module):
         X[:, :, height_offset:height_offset+attack_height, width_offset:width_offset+attack_width] = image.detach().clone()
         X.requires_grad_()
 
-        P = torch.sigmoid(self.W * self.M)
+        P = torch.tanh(self.W * self.M)
         X_adv = X + P
-        X_adv = (X_adv - self.mean) / self.std
+        # X_adv = (X_adv - self.mean) / self.std
         Y_adv = self.net(X_adv)
         Y_adv = F.softmax(Y_adv, 1)
         return self.output_mapper(Y_adv)
@@ -122,7 +122,7 @@ class Adversarial_Reprogramming(object):
         if self.mode == 'train':
             # optimizer
             self.BCE = torch.nn.BCELoss()
-            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.Program.parameters()), lr=self.cfg.lr, betas=(0.5, 0.999))
+            self.optimizer = torch.optim.Adam((self.Program.get_parameter('W'),), lr=self.cfg.lr, betas=(0.5, 0.999))
             self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=2, gamma=self.cfg.decay)
             if self.restore:
                 self.lr_scheduler.step()
@@ -151,8 +151,6 @@ class Adversarial_Reprogramming(object):
             if p.requires_grad:
                 return p
 
-    def imagenet_label2_mnist_label(self, imagenet_label):
-        return imagenet_label[:,:10]
 
     def tensor2var(self, tensor, requires_grad=False, volatile=False):
         if self.gpu:
@@ -163,7 +161,7 @@ class Adversarial_Reprogramming(object):
     def compute_loss(self, out, label):
         label = torch.zeros(self.cfg.batch_size, 10).scatter_(1, label.view(-1,1), 1)
         label = self.tensor2var(label)
-        return self.BCE(out, label) + self.cfg.lmd * torch.norm(self.get_W) ** 2
+        return self.BCE(out, label) + self.cfg.lmd * torch.norm(self.Program.get_parameter('W')) ** 2
 
     def validate(self):
         acc = 0.0
